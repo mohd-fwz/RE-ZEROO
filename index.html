@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re:Zero - Subaru's Checkpoint Algorithm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Video -->
+<div class="background-video">
+    <video autoplay loop muted playsinline id="bg-video">
+        <source src="assets/subaru-background.mp4" type="video/mp4">
+        <!-- Fallback if video doesn't load -->
+        Your browser does not support the video tag.
+    </video>
+    <div class="video-overlay"></div>
+</div>
+    <!-- Main Content -->
+    <div class="container">
+        <header class="header">
+            <h1>⏪ Re:Zero - Subaru's Checkpoint Algorithm</h1>
+            <p>Find the optimal path with minimum deaths using Dijkstra's Algorithm</p>
+        </header>
+
+        <!-- Tabs -->
+<div class="tabs">
+    <button class="tab-btn active" data-tab="input">
+        <span class="icon">▶</span> Input & Run
+    </button>
+    <button class="tab-btn" data-tab="visualization">
+        <span class="icon">👁</span> Dry Run
+    </button>
+    <button class="tab-btn" data-tab="code">
+        <span class="icon">💻</span> Algorithm Code
+    </button>
+    <!-- Changed to a link -->
+    <a href="https://github.com/krrish97-svg/RE-ZERO44" class="tab-btn tab-link">
+        <span class="icon">✨</span> Animation
+    </a>
+</div>
+
+        <!-- Tab Contents -->
+        <div class="tab-content">
+            <!-- Input Section -->
+            <div id="input" class="tab-pane active">
+                <div class="input-section">
+                    <h2>📝 Input Your Timeline Data</h2>
+                    <p class="help-text">Format: N M, then M transitions (from to deaths), then start goal</p>
+                    
+                    <textarea id="graph-input" rows="12" placeholder="Enter your graph data...">6 8
+Mansion TrustRem 3
+Mansion TrustRam 2
+TrustRem Village 1
+TrustRam Village 4
+Mansion DirectVillage 8
+Village MeetWitch 2
+TrustRem MeetWitch 5
+TrustRam MeetWitch 3
+Mansion MeetWitch</textarea>
+                    
+                    <button id="run-btn" class="run-button">
+                        <span>▶</span> Run Algorithm
+                    </button>
+
+                    <div id="result-summary" class="result-summary" style="display: none;">
+                        <h3>🎯 Result</h3>
+                        <div class="result-box">
+                            <p><strong>Minimum Deaths:</strong> <span id="min-deaths">-</span></p>
+                            <p><strong>Optimal Path:</strong> <span id="optimal-path">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Section -->
+            <div id="visualization" class="tab-pane">
+                <div class="visualization-section">
+                    <h2>🔍 Algorithm Dry Run</h2>
+                    
+                    <div class="controls">
+                        <button id="prev-step" class="control-btn">⏮ Previous</button>
+                        <button id="play-pause" class="control-btn">▶ Play</button>
+                        <button id="next-step" class="control-btn">Next ⏭</button>
+                        <button id="reset-viz" class="control-btn">🔄 Reset</button>
+                    </div>
+
+                    <div class="step-info">
+                        <p><strong>Step <span id="current-step">0</span> / <span id="total-steps">0</span></strong></p>
+                        <p id="step-message" class="step-message">Click "Run Algorithm" in the Input tab first</p>
+                    </div>
+
+                    <div class="visualization-grid">
+                        <!-- Graph Visualization -->
+                        <div class="viz-panel">
+                            <h3>Graph State</h3>
+                            <div id="graph-viz" class="graph-container"></div>
+                        </div>
+
+                        <!-- Data Structures -->
+                        <div class="viz-panel">
+                            <h3>Algorithm State</h3>
+                            <div id="data-structures">
+                                <div class="data-section">
+                                    <h4>Distances</h4>
+                                    <div id="distances-table" class="data-table"></div>
+                                </div>
+                                <div class="data-section">
+                                    <h4>Priority Queue</h4>
+                                    <div id="queue-table" class="data-table"></div>
+                                </div>
+                                <div class="data-section">
+                                    <h4>Visited Nodes</h4>
+                                    <div id="visited-list" class="data-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Section -->
+            <div id="code" class="tab-pane">
+                <div class="code-section">
+                    <h2>💻 C++ Implementation</h2>
+                    <pre><code class="cpp-code">#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;map&gt;
+#include &lt;queue&gt;
+#include &lt;string&gt;
+#include &lt;algorithm&gt;
+
+using namespace std;
+
+struct Edge {
+    string to;
+    int deaths;
+};
+
+// Dijkstra's algorithm with path reconstruction
+pair&lt;int, vector&lt;string&gt;&gt; dijkstra(
+    map&lt;string, vector&lt;Edge&gt;&gt;& graph,
+    const string& start,
+    const string& goal
+) {
+    map&lt;string, int&gt; dist;
+    map&lt;string, string&gt; parent;
+    
+    // Priority queue: (distance, node) - min heap
+    priority_queue&lt;pair&lt;int, string&gt;, 
+                   vector&lt;pair&lt;int, string&gt;&gt;, 
+                   greater&lt;pair&lt;int, string&gt;&gt;&gt; pq;
+    
+    dist[start] = 0;
+    pq.push({0, start});
+    
+    while (!pq.empty()) {
+        int d = pq.top().first;
+        string u = pq.top().second;
+        pq.pop();
+        
+        // Skip if we've already found a better path
+        if (dist.count(u) && d > dist[u]) continue;
+        
+        // Early exit if we reached the goal
+        if (u == goal) break;
+        
+        // Explore neighbors
+        if (graph.find(u) != graph.end()) {
+            for (const Edge& edge : graph[u]) {
+                string v = edge.to;
+                int weight = edge.deaths;
+                int newDist = dist[u] + weight;
+                
+                // Update if we found a better path
+                if (!dist.count(v) || newDist &lt; dist[v]) {
+                    dist[v] = newDist;
+                    parent[v] = u;
+                    pq.push({newDist, v});
+                }
+            }
+        }
+    }
+    
+    // Reconstruct path from start to goal
+    vector&lt;string&gt; path;
+    if (!dist.count(goal)) {
+        return {-1, path}; // No path found
+    }
+    
+    string current = goal;
+    while (current != start) {
+        path.push_back(current);
+        current = parent[current];
+    }
+    path.push_back(start);
+    reverse(path.begin(), path.end());
+    
+    return {dist[goal], path};
+}
+
+int main() {
+    int N, M;
+    cin >> N >> M;
+    
+    // Build adjacency list
+    map&lt;string, vector&lt;Edge&gt;&gt; graph;
+    
+    for (int i = 0; i &lt; M; i++) {
+        string from, to;
+        int deaths;
+        cin >> from >> to >> deaths;
+        graph[from].push_back({to, deaths});
+    }
+    
+    string start, goal;
+    cin >> start >> goal;
+    
+    // Find shortest path
+    auto [minDeaths, path] = dijkstra(graph, start, goal);
+    
+    // Output results
+    cout &lt;&lt; minDeaths &lt;&lt; endl;
+    for (size_t i = 0; i &lt; path.size(); i++) {
+        if (i > 0) cout &lt;&lt; " ";
+        cout &lt;&lt; path[i];
+    }
+    cout &lt;&lt; endl;
+    
+    return 0;
+}</code></pre>
+                </div>
+            </div>
+
+            <!-- Animation Section -->
+            <div id="animation" class="tab-pane">
+                <div class="animation-section">
+                    <h2>✨ Custom Animation</h2>
+                    <p class="placeholder-text">Your teammate's animation will go here!</p>
+                    <div id="animation-container" class="animation-container">
+                        <!-- Animation content goes here -->
+                        <div class="placeholder-animation">
+                            <div class="loading-spinner"></div>
+                            <p>Animation placeholder - Ready for integration</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dijkstra.js"></script>
+    <script src="visualization.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
